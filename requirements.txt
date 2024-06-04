@@ -1,0 +1,10 @@
+streamlit
+pandas
+plotly
+scikit-learn
+xgboost
+matplotlib
+seaborn
+firebase-admin
+toml
+
