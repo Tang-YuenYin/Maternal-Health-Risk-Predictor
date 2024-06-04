@@ -8,7 +8,6 @@ from xgboost import XGBClassifier
 import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime
-from dotenv import load_dotenv
 import os
 import toml
 from sklearn.model_selection import train_test_split
