@@ -73,69 +73,54 @@ elif section == 'Data Description':
     st.write(data.describe().T)
 elif section == 'RiskLevel Prediction':
     st.subheader("Predict RiskLevel")
-    age = st.number_input("Enter Age", min_value=1, max_value=100, value=30)
-    bs = st.number_input("Enter Blood Sugar", min_value=0.0, max_value=300.0, value=100.0)
-    body_temp = st.number_input("Enter Body Temperature", min_value=35.0, max_value=42.0, value=37.0)
-    diastolic_bp = st.number_input("Enter Diastolic Blood Pressure", min_value=0, max_value=200, value=80)
-    heart_rate = st.number_input("Enter Heart Rate", min_value=0, max_value=200, value=70)
-    systolic_bp = st.number_input("Enter Systolic Blood Pressure", min_value=0, max_value=300, value=120)
+    age = st.number_input("Enter Age", min_value=1, max_value=100, value=1)
+    bs = st.number_input("Enter Blood Sugar", min_value=0.0, max_value=300.0, value=0.0)
+    body_temp = st.number_input("Enter Body Temperature", min_value=35.0, max_value=42.0, value=35.0)
+    diastolic_bp = st.number_input("Enter Diastolic Blood Pressure", min_value=0, max_value=200, value=0)
+    heart_rate = st.number_input("Enter Heart Rate", min_value=0, max_value=200, value=0)
+    systolic_bp = st.number_input("Enter Systolic Blood Pressure", min_value=0, max_value=300, value=0)
 
-    input_data = pd.DataFrame({
-        'Age': [age],
-        'BS': [bs],
-        'BodyTemp': [body_temp],
-        'DiastolicBP': [diastolic_bp],
-        'HeartRate': [heart_rate],
-        'SystolicBP': [systolic_bp]
-    }, columns=feature_names)
-
-    # Create a classification model
-    X = data[feature_names]
-    y = data['RiskLevel']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-    model = XGBClassifier(max_depth=2, random_state=0)
-    model.fit(X_train, y_train)
-
-    # prediction = model.predict(input_data)  # Make a prediction using the trained model
-
-    # predicted_label = le.inverse_transform(prediction)[0]
-    # st.write("Predicted Risk Level:", predicted_label)
-
-    # if st.button("Save to Mama's Journal"):
-    #         # Convert input_data DataFrame to dictionary
-    #         input_data_dict = input_data.astype(float).to_dict(orient='records')[0]
-    #         # Convert prediction value to a standard Python integer
-    #         prediction_value = int(prediction[0])
-    #         # Save prediction to Firebase
-    #         doc_ref = db.collection("Maternal").add({
-    #         "date": datetime.now().isoformat(),
-    #         "input_data": input_data_dict ,
-    #         "prediction": predicted_label ,
-    #         "prediction_value": prediction_value,
-    #     })
-    #         st.success("Prediction saved to Firebase")
     if st.button("Predict"):
-        input_data_dict = input_data.astype(float).to_dict(orient='records')[0]
+        input_data = pd.DataFrame({
+            'Age': [age],
+            'BS': [bs],
+            'BodyTemp': [body_temp],
+            'DiastolicBP': [diastolic_bp],
+            'HeartRate': [heart_rate],
+            'SystolicBP': [systolic_bp]
+        }, columns=feature_names)
+
+        # Create a classification model
+        X = data[feature_names]
+        y = data['RiskLevel']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+        model = XGBClassifier(max_depth=2, random_state=0)
+        model.fit(X_train, y_train)
+
         prediction = model.predict(input_data)  # Make a prediction using the trained model
+
         predicted_label = le.inverse_transform(prediction)[0]
         st.write("Predicted Risk Level:", predicted_label)
-        
+
         # Store the prediction result in session state
-        st.session_state["prediction_result"] = {
-            "input_data": input_data_dict,
+        st.session_state["maternal_prediction_result"] = {
+            "input_data": input_data.astype(float).to_dict(orient='records')[0],
             "prediction_label": predicted_label,
             "prediction_value": int(prediction[0])
         }
 
-# Check if there is a prediction result in session state and display the save button
-if "prediction_result" in st.session_state:
-    if st.button("Save to Mama's Journal"):
-        result = st.session_state["prediction_result"]
-        # Save prediction to Firebase
-        doc_ref = db.collection("Maternal").add({
-            "date": datetime.now().isoformat(),
-            "input_data": result["input_data"],
-            "prediction": result["prediction_label"],
-            "prediction_value": result["prediction_value"]
-        })
-        st.success("Prediction saved to Firebase")
+    # Ensure session state is not empty before saving
+    if "maternal_prediction_result" in st.session_state:
+        if st.button("Save to Mama's Journal"):
+            result = st.session_state["maternal_prediction_result"]
+            # Save prediction to Firebase
+            try:
+                db.collection("Maternal").add({
+                    "date": datetime.now().isoformat(),
+                    "input_data": result["input_data"],
+                    "prediction": result["prediction_label"],
+                    "prediction_value": result["prediction_value"]
+                })
+                st.success("Prediction saved to Firebase")
+            except Exception as e:
+                st.error(f"Error saving prediction: {e}")
