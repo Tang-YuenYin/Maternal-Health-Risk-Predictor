@@ -8,6 +8,7 @@ from xgboost import XGBClassifier
 import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime
+from dotenv import load_dotenv
 import os
 import toml
 from sklearn.model_selection import train_test_split
@@ -96,21 +97,46 @@ elif section == 'RiskLevel Prediction':
     model = XGBClassifier(max_depth=2, random_state=0)
     model.fit(X_train, y_train)
 
-    prediction = model.predict(input_data)  # Make a prediction using the trained model
+    # prediction = model.predict(input_data)  # Make a prediction using the trained model
 
-    predicted_label = le.inverse_transform(prediction)[0]
-    st.write("Predicted Risk Level:", predicted_label)
+    # predicted_label = le.inverse_transform(prediction)[0]
+    # st.write("Predicted Risk Level:", predicted_label)
 
+    # if st.button("Save to Mama's Journal"):
+    #         # Convert input_data DataFrame to dictionary
+    #         input_data_dict = input_data.astype(float).to_dict(orient='records')[0]
+    #         # Convert prediction value to a standard Python integer
+    #         prediction_value = int(prediction[0])
+    #         # Save prediction to Firebase
+    #         doc_ref = db.collection("Maternal").add({
+    #         "date": datetime.now().isoformat(),
+    #         "input_data": input_data_dict ,
+    #         "prediction": predicted_label ,
+    #         "prediction_value": prediction_value,
+    #     })
+    #         st.success("Prediction saved to Firebase")
+    if st.button("Predict"):
+        input_data_dict = input_data.astype(float).to_dict(orient='records')[0]
+        prediction = model.predict(input_data)  # Make a prediction using the trained model
+        predicted_label = le.inverse_transform(prediction)[0]
+        st.write("Predicted Risk Level:", predicted_label)
+        
+        # Store the prediction result in session state
+        st.session_state["prediction_result"] = {
+            "input_data": input_data_dict,
+            "prediction_label": predicted_label,
+            "prediction_value": int(prediction[0])
+        }
+
+# Check if there is a prediction result in session state and display the save button
+if "prediction_result" in st.session_state:
     if st.button("Save to Mama's Journal"):
-            # Convert input_data DataFrame to dictionary
-            input_data_dict = input_data.astype(float).to_dict(orient='records')[0]
-            # Convert prediction value to a standard Python integer
-            prediction_value = int(prediction[0])
-            # Save prediction to Firebase
-            doc_ref = db.collection("Maternal").add({
+        result = st.session_state["prediction_result"]
+        # Save prediction to Firebase
+        doc_ref = db.collection("Maternal").add({
             "date": datetime.now().isoformat(),
-            "input_data": input_data_dict ,
-            "prediction": predicted_label ,
-            "prediction_value": prediction_value,
+            "input_data": result["input_data"],
+            "prediction": result["prediction_label"],
+            "prediction_value": result["prediction_value"]
         })
-            st.success("Prediction saved to Firebase")
+        st.success("Prediction saved to Firebase")
